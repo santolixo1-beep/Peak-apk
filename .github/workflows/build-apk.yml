@@ -25,7 +25,7 @@ jobs:
 
       - name: Instalar pip, cython y buildozer
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade "pip==23.3.2" "setuptools==68.2.2" wheel
           python -m pip install "cython<3.0" buildozer==1.5.0
 
       - name: Cache de Buildozer
@@ -48,15 +48,23 @@ jobs:
 
       - name: Compilar APK con Buildozer
         run: |
-          export PIP_USER=false
-          export PYTHONNOUSERSITE=1
+          unset PYTHONNOUSERSITE
+          export PIP_USER=true
           yes | buildozer -v android debug 2>&1 | tee build_log.txt
 
       - name: Mostrar últimas líneas si falla
         if: failure()
         run: |
-          echo "===== ÚLTIMAS 200 LÍNEAS ====="
+          echo "===== ÚLTIMAS 200 LÍNEAS DEL LOG ====="
           tail -n 200 build_log.txt
+
+      - name: Debug - Listar archivos generados
+        if: always()
+        run: |
+          echo "=== Contenido de bin/ ==="
+          ls -la bin/ || echo "No existe bin/"
+          echo "=== Buscar APKs ==="
+          find . -name "*.apk" -type f || echo "No hay APKs"
 
       - name: Subir APK como artefacto
         if: success()
@@ -65,3 +73,4 @@ jobs:
           name: predictor-apk
           path: bin/*.apk
           retention-days: 30
+          if-no-files-found: error
